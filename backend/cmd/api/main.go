@@ -46,10 +46,12 @@ func main() {
 
 	spotsH := &handlers.SpotsHandler{DB: pool}
 	r.Get("/api/spots", spotsH.List)
+	r.Get("/api/spots/{id}", spotsH.Get)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(secret))
 		r.Post("/api/spots", spotsH.Create)
+		r.Put("/api/spots/{id}/rating", spotsH.Rate)
 	})
 
 	log.Println("listening on :" + cfg.Port)
