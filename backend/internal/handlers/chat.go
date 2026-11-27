@@ -55,7 +55,7 @@ func (h *ChatHandler) History(w http.ResponseWriter, r *http.Request) {
 		SELECT m.id, m.user_id, u.nickname, m.text, m.created_at
 		FROM messages m
 		JOIN users u ON u.id = m.user_id
-		WHERE m.spot_id = $1 AND ($2::bigint = 0 OR m.id < $2::bigint)
+		WHERE m.spot_id = $1 AND NOT m.hidden AND ($2::bigint = 0 OR m.id < $2::bigint)
 		ORDER BY m.id DESC
 		LIMIT $3`, sid, before, limit)
 	if err != nil {
@@ -94,7 +94,7 @@ func (h *ChatHandler) Serve(w http.ResponseWriter, r *http.Request) {
 		SELECT u.nickname
 		FROM users u
 		JOIN spots s ON s.id = $2 AND s.status = 'approved'
-		WHERE u.id = $1`, userID, sid).Scan(&nick)
+		WHERE u.id = $1 AND NOT u.banned`, userID, sid).Scan(&nick)
 	if err == pgx.ErrNoRows {
 		writeError(w, http.StatusNotFound, "спот или пользователь не найден")
 		return
