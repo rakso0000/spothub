@@ -3,6 +3,7 @@ module github.com/rakso0000/spothub/backend
 go 1.27.4
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/cors v1.2.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
