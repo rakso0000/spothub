@@ -72,3 +72,20 @@ func (h *Hub) SendTo(c *Client, msg []byte) {
 	default:
 	}
 }
+
+// KickUser отключает все соединения пользователя (например, при бане).
+func (h *Hub) KickUser(userID int64) {
+	h.mu.RLock()
+	var targets []*Client
+	for _, room := range h.rooms {
+		for c := range room {
+			if c.UserID == userID {
+				targets = append(targets, c)
+			}
+		}
+	}
+	h.mu.RUnlock()
+	for _, c := range targets {
+		h.Unregister(c)
+	}
+}
