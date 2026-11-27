@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/rakso0000/spothub/backend/internal/auth"
 	"github.com/rakso0000/spothub/backend/internal/config"
 	"github.com/rakso0000/spothub/backend/internal/handlers"
 )
@@ -37,9 +38,19 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
-	authH := &handlers.AuthHandler{DB: pool, Secret: []byte(cfg.JWTSecret)}
+	secret := []byte(cfg.JWTSecret)
+
+	authH := &handlers.AuthHandler{DB: pool, Secret: secret}
 	r.Post("/api/auth/register", authH.Register)
 	r.Post("/api/auth/login", authH.Login)
+
+	spotsH := &handlers.SpotsHandler{DB: pool}
+	r.Get("/api/spots", spotsH.List)
+
+	r.Group(func(r chi.Router) {
+		r.Use(auth.Middleware(secret))
+		r.Post("/api/spots", spotsH.Create)
+	})
 
 	log.Println("listening on :" + cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))
