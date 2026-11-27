@@ -12,6 +12,7 @@ import (
 	"github.com/rakso0000/spothub/backend/internal/auth"
 	"github.com/rakso0000/spothub/backend/internal/config"
 	"github.com/rakso0000/spothub/backend/internal/handlers"
+	"github.com/rakso0000/spothub/backend/internal/ws"
 )
 
 func main() {
@@ -47,6 +48,11 @@ func main() {
 	spotsH := &handlers.SpotsHandler{DB: pool}
 	r.Get("/api/spots", spotsH.List)
 	r.Get("/api/spots/{id}", spotsH.Get)
+
+	hub := ws.NewHub()
+	chatH := &handlers.ChatHandler{DB: pool, Hub: hub, Secret: secret}
+	r.Get("/api/spots/{id}/messages", chatH.History)
+	r.Get("/ws/spots/{id}", chatH.Serve) // токен проверяется внутри, из ?token=
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(secret))
