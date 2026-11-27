@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rakso0000/spothub/backend/internal/config"
+	"github.com/rakso0000/spothub/backend/internal/handlers"
 )
 
 func main() {
@@ -35,6 +36,10 @@ func main() {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 	})
+
+	authH := &handlers.AuthHandler{DB: pool, Secret: []byte(cfg.JWTSecret)}
+	r.Post("/api/auth/register", authH.Register)
+	r.Post("/api/auth/login", authH.Login)
 
 	log.Println("listening on :" + cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, r))
