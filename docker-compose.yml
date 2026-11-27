@@ -10,5 +10,25 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations/000001_init.up.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./backend/migrations/000002_moderation.up.sql:/docker-entrypoint-initdb.d/02_moderation.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U spothub -d spothub"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      DB_URL: postgres://spothub:spothub@db:5432/spothub?sslmode=disable
+      JWT_SECRET: dev-secret-change-me
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
 volumes:
   pgdata:
