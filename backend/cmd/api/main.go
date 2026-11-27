@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -40,6 +41,7 @@ func main() {
 	})
 
 	secret := []byte(cfg.JWTSecret)
+	hub := ws.NewHub()
 
 	authH := &handlers.AuthHandler{DB: pool, Secret: secret}
 	r.Post("/api/auth/register", authH.Register)
@@ -49,15 +51,20 @@ func main() {
 	r.Get("/api/spots", spotsH.List)
 	r.Get("/api/spots/{id}", spotsH.Get)
 
-	hub := ws.NewHub()
 	chatH := &handlers.ChatHandler{DB: pool, Hub: hub, Secret: secret}
 	r.Get("/api/spots/{id}/messages", chatH.History)
 	r.Get("/ws/spots/{id}", chatH.Serve) // токен проверяется внутри, из ?token=
+
+	checkinH := &handlers.CheckinHandler{DB: pool, Hub: hub}
+	r.Get("/api/spots/{id}/here", checkinH.Here)
+	go checkinH.RunCleanup(context.Background(), 30*time.Second)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(secret))
 		r.Post("/api/spots", spotsH.Create)
 		r.Put("/api/spots/{id}/rating", spotsH.Rate)
+		r.Post("/api/spots/{id}/checkin", checkinH.Checkin)
+		r.Delete("/api/spots/{id}/checkin", checkinH.Checkout)
 	})
 
 	log.Println("listening on :" + cfg.Port)
